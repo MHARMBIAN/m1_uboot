@@ -29,17 +29,24 @@ jobs:
     steps:
       - name: Initialize Environment
         run: |
-          echo "TOOLCHAIN_VERSION=7.4.1-2019.02" >> $GITHUB_ENV
-          echo "TOOLCHAIN_TARGET=aarch64-linux-gnu" >> $GITHUB_ENV
-          echo "TOOLCHAIN_HOST=x86_64" >> $GITHUB_ENV
-          echo "TOOLCHAIN_FULL_NAME=gcc-linaro-${TOOLCHAIN_VERSION}-${TOOLCHAIN_HOST}_${TOOLCHAIN_TARGET}" >> $GITHUB_ENV
+          TOOLCHAIN_URL_VERSION=7.4-2019.02
+          TOOLCHAIN_FILE_VERSION=7.4.1-2019.02
+          TOOLCHAIN_TARGET=aarch64-linux-gnu
+          TOOLCHAIN_HOST=x86_64
+          TOOLCHAIN_FULL_NAME=gcc-linaro-${TOOLCHAIN_FILE_VERSION}-${TOOLCHAIN_HOST}_${TOOLCHAIN_TARGET}
+          echo "TOOLCHAIN_URL_VERSION=${TOOLCHAIN_URL_VERSION}" >> $GITHUB_ENV
+          echo "TOOLCHAIN_FILE_VERSION=${TOOLCHAIN_FILE_VERSION}" >> $GITHUB_ENV
+          echo "TOOLCHAIN_TARGET=${TOOLCHAIN_TARGET}" >> $GITHUB_ENV
+          echo "TOOLCHAIN_HOST=${TOOLCHAIN_HOST}" >> $GITHUB_ENV
+          echo "TOOLCHAIN_FULL_NAME=${TOOLCHAIN_FULL_NAME}" >> $GITHUB_ENV
 
       - name: Log Environment
         run: |
-          echo "  TOOLCHAIN_VERSION:   ${TOOLCHAIN_VERSION}"
-          echo "  TOOLCHAIN_TARGET:    ${TOOLCHAIN_TARGET}"
-          echo "  TOOLCHAIN_HOST:      ${TOOLCHAIN_HOST}"
-          echo "  TOOLCHAIN_FULL_NAME: ${TOOLCHAIN_FULL_NAME}"
+          echo "  TOOLCHAIN_URL_VERSION:  ${TOOLCHAIN_URL_VERSION}"
+          echo "  TOOLCHAIN_FILE_VERSION: ${TOOLCHAIN_FILE_VERSION}"
+          echo "  TOOLCHAIN_TARGET:       ${TOOLCHAIN_TARGET}"
+          echo "  TOOLCHAIN_HOST:         ${TOOLCHAIN_HOST}"
+          echo "  TOOLCHAIN_FULL_NAME:    ${TOOLCHAIN_FULL_NAME}"
 
       - name: Prepare folders
         run: |
@@ -54,11 +61,11 @@ jobs:
           version: 1.0
 
       - name: Install Toolchain
-        run:
-          curl -L -o cache/toolchains/${TOOLCHAIN_FULL_NAME}.tar.xz https://releases.linaro.org/components/toolchain/binaries/${TOOLCHAIN_VERSION}/${TOOLCHAIN_TARGET}/${TOOLCHAIN_FULL_NAME}.tar.xz
-          tar -xvf cache/toolchains/${TOOLCHAIN_FULL_NAME}.tar.xz -C cache/toolchains/
-          rm --verbose -rf cache/toolchains/${TOOLCHAIN_FULL_NAME}.tar.xz
+        run: |
+          curl -L -o cache/toolchains/${{ env.TOOLCHAIN_FULL_NAME }}.tar.xz https://releases.linaro.org/components/toolchain/binaries/${{ env.TOOLCHAIN_URL_VERSION }}/${{ env.TOOLCHAIN_TARGET }}/${{ env.TOOLCHAIN_FULL_NAME }}.tar.xz
+          tar -xvf cache/toolchains/${{ env.TOOLCHAIN_FULL_NAME }}.tar.xz -C cache/toolchains/
+          rm --verbose -rf cache/toolchains/${{ env.TOOLCHAIN_FULL_NAME }}.tar.xz
 
       - name: Checkout M1 U-Boot
-        run:
+        run: |
           git clone https://github.com/hardkernel/u-boot.git -b odroidm1-v2017.09
