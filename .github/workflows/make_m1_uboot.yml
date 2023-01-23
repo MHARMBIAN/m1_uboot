@@ -1,13 +1,9 @@
 # ------------------------------------------------------------------------------------------
-# This is a workflow to build an bootable Armbian SD card image with a Linux kernel
-# and appropriate boot images to setup the NAND on a Cubietruck (SUNXI A20 board)
-# for:
-#   - SUNXI NAND support within mainline kernel
-#   - booting from NAND with mainline U-Boot
-#   - have a NAND partition configured for an UBI filesystem
+# This is a workflow to build U-Boot for Odroid M1.
+# According to: https://wiki.odroid.com/odroid-m1/software/building_u-boot
 #
 # ------------------------------------------------------------------------------------------
-name: Build Armbian for Cubietruck
+name: Build U-Boot for Odroid M1
 
 on:
   workflow_dispatch:
@@ -18,7 +14,6 @@ on:
   push:
     branches:
       - master
-  #    - boards/cubietruck
   #schedule:
   #    - cron: 0 8 * * 5
 
@@ -56,7 +51,7 @@ jobs:
       - name: Install Packages
         uses: awalsh128/cache-apt-pkgs-action@latest
         with:
-          packages: lzop build-essential gcc bc libncurses5-dev libc6-i386 lib32stdc++6 zlib1g
+          packages: lzop build-essential gcc bc libncurses5-dev libc6-i386 lib32stdc++6 zlib1g device-tree-compiler python2
           # Cache version:
           version: 1.0
 
@@ -68,4 +63,18 @@ jobs:
 
       - name: Checkout M1 U-Boot
         run: |
-          git clone https://github.com/hardkernel/u-boot.git -b odroidm1-v2017.09
+          # git clone https://github.com/hardkernel/u-boot.git -b odroidm1-v2017.09
+          git clone --progress --verbose https://github.com/MHARMBIAN/rklinux_u-boot.git -b odroidm1-v2017.09 u-boot
+
+      - name: Compile U-Boot
+        run: |
+          export ARCH=arm64
+          export CROSS_COMPILE=${{ env.TOOLCHAIN_TARGET }}-
+          export PATH=$(pwd)/cache/toolchains/${{ env.TOOLCHAIN_FULL_NAME }}/bin:$PATH
+          cd u-boot
+          git submodule init
+          git submodule update
+          ./make.sh odroid_rk3568
+
+
+
