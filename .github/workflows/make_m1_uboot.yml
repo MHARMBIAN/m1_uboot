@@ -46,7 +46,7 @@ jobs:
       - name: Prepare folders
         run: |
           mkdir -p cache/{toolchains,tmp}
-          mkdir -p output
+          mkdir -p output/{spl,tpl}
 
       - name: Install Packages
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -75,6 +75,15 @@ jobs:
           git submodule init
           git submodule update
           ./make.sh odroid_rk3568
+          cp --verbose uboot.img ../output
+          cp --verbose -R tpl/*.bin ../output/tpl
+          cp --verbose -R spl/*.bin ../output/spl
 
+      - name: Upload U-Boot image
+        uses: actions/upload-artifact@v3
+        with:
+          name: U-Boot Image
+          path: |
+            output/
 
 
