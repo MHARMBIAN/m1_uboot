@@ -1,0 +1,64 @@
+# ------------------------------------------------------------------------------------------
+# This is a workflow to build an bootable Armbian SD card image with a Linux kernel
+# and appropriate boot images to setup the NAND on a Cubietruck (SUNXI A20 board)
+# for:
+#   - SUNXI NAND support within mainline kernel
+#   - booting from NAND with mainline U-Boot
+#   - have a NAND partition configured for an UBI filesystem
+#
+# ------------------------------------------------------------------------------------------
+name: Build Armbian for Cubietruck
+
+on:
+  workflow_dispatch:
+  #push:
+  #  tags:
+  #    - 'v[0-9]+.[0-9]+.[0-9]+'
+  #    - 'v[0-9]+.[0-9]+.[0-9]+.[0-9]+'
+  push:
+    branches:
+      - master
+  #    - boards/cubietruck
+  #schedule:
+  #    - cron: 0 8 * * 5
+
+jobs:
+  job1_Build:
+    name: Build U-Boot
+    runs-on: ubuntu-latest
+    steps:
+      - name: Initialize Environment
+        run: |
+          echo "TOOLCHAIN_VERSION=7.4.1-2019.02" >> $GITHUB_ENV
+          echo "TOOLCHAIN_TARGET=aarch64-linux-gnu" >> $GITHUB_ENV
+          echo "TOOLCHAIN_HOST=x86_64" >> $GITHUB_ENV
+          echo "TOOLCHAIN_FULL_NAME=gcc-linaro-${TOOLCHAIN_VERSION}-${TOOLCHAIN_HOST}_${TOOLCHAIN_TARGET}" >> $GITHUB_ENV
+
+      - name: Log Environment
+        run: |
+          echo "  TOOLCHAIN_VERSION:   ${TOOLCHAIN_VERSION}"
+          echo "  TOOLCHAIN_TARGET:    ${TOOLCHAIN_TARGET}"
+          echo "  TOOLCHAIN_HOST:      ${TOOLCHAIN_HOST}"
+          echo "  TOOLCHAIN_FULL_NAME: ${TOOLCHAIN_FULL_NAME}"
+
+      - name: Prepare folders
+        run: |
+          mkdir -p cache/{toolchains,tmp}
+          mkdir -p output
+
+      - name: Install Packages
+        uses: awalsh128/cache-apt-pkgs-action@latest
+        with:
+          packages: lzop build-essential gcc bc libncurses5-dev libc6-i386 lib32stdc++6 zlib1g
+          # Cache version:
+          version: 1.0
+
+      - name: Install Toolchain
+        run:
+          curl -L -o cache/toolchains/${TOOLCHAIN_FULL_NAME}.tar.xz https://releases.linaro.org/components/toolchain/binaries/${TOOLCHAIN_VERSION}/${TOOLCHAIN_TARGET}/${TOOLCHAIN_FULL_NAME}.tar.xz
+          tar -xvf cache/toolchains/${TOOLCHAIN_FULL_NAME}.tar.xz -C cache/toolchains/
+          rm --verbose -rf cache/toolchains/${TOOLCHAIN_FULL_NAME}.tar.xz
+
+      - name: Checkout M1 U-Boot
+        run:
+          git clone https://github.com/hardkernel/u-boot.git -b odroidm1-v2017.09
