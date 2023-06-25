@@ -1,9 +1,9 @@
 # ------------------------------------------------------------------------------------------
-# This is a workflow to build U-Boot for Odroid M1.
-# According to: https://wiki.odroid.com/odroid-m1/software/building_u-boot
+# This is a workflow to build U-Boot mainline for Odroid M1.
+# According to: https://github.com/u-boot/u-boot/blob/master/doc/board/rockchip/rockchip.rst
 #
 # ------------------------------------------------------------------------------------------
-name: Build U-Boot for Odroid M1
+name: Build U-Boot for Odroid M1 (mainline)
 
 on:
   workflow_dispatch:
@@ -19,7 +19,7 @@ on:
 
 jobs:
   job1_Build:
-    name: Build U-Boot
+    name: Build U-Boot (mainline)
     runs-on: ubuntu-latest
     steps:
       - name: Initialize Environment
@@ -63,27 +63,69 @@ jobs:
 
       - name: Checkout M1 U-Boot
         run: |
-          # git clone https://github.com/hardkernel/u-boot.git -b odroidm1-v2017.09
-          git clone --progress --verbose --depth 1 --branch odroidm1-v2017.09 https://github.com/MHARMBIAN/rklinux_u-boot.git u-boot
+          # mainline from Jonas Karlman with recent patches not yet merged to mainline u-boot
+          git clone --progress --verbose --depth 1 --branch rk3568_mainline_MH https://github.com/MHARMBIAN/u-boot-kwiboo_Jonas_Karlman.git u-boot
+
+      - name: Checkout rkbin
+        run: |
+          git clone --progress --verbose --depth 1 --branch rk3568_MH https://github.com/MHARMBIAN/rklinux_rkbin.git rkbin
 
       - name: Compile U-Boot
         run: |
-          export ARCH=arm64
-          export CROSS_COMPILE=${{ env.TOOLCHAIN_TARGET }}-
           export PATH=$(pwd)/cache/toolchains/${{ env.TOOLCHAIN_FULL_NAME }}/bin:$PATH
           cd u-boot
-          git submodule init
-          git submodule update
-          ./make.sh odroid_rk3568
-          cp --verbose uboot.img ../output
-          cp --verbose -R tpl/*.bin ../output/tpl
+          export ARCH=arm64
+          export CROSS_COMPILE=${{ env.TOOLCHAIN_TARGET }}-
+          #export BL31=../arm-trusted-firmware/build/rk3568/release/bl31/bl31.elf
+          export BL31=../rkbin/bin/rk35/rk3568_bl31_v1.42.elf
+          export ROCKCHIP_TPL=../rkbin/bin/rk35/rk3568_ddr_1560MHz_v1.16.bin
+          #git submodule init
+          #git submodule update
+          #./make.sh odroid_rk3568
+          make clean
+          make odroid-m1-rk3568_defconfig
+          make
+          ls -alR > ../output/u-boot_dir_dump.txt
+          cp --verbose *.bin ../output
+          cp --verbose *.dtb ../output
+          cp --verbose *.img ../output
+          cp --verbose *.itb ../output
+          cp --verbose *.sym ../output
+          if [[ -d tpl ]]; then
+            cp --verbose -R tpl/*.bin ../output/tpl
+            cp --verbose -R tpl/*.sym ../output/spl
+          fi
           cp --verbose -R spl/*.bin ../output/spl
+          cp --verbose -R spl/*.dtb ../output/spl
+          cp --verbose -R spl/*.sym ../output/spl
+          cat << EOF > ../output/ReadeMe.txt
+          How to use the U-Boot image files
+          ---------------------------------
+          As of git commit comment to SHA-1: ab900d518e47b4a81023a3f0b191be110c956ace
+          on https://github.com/MHARMBIAN/u-boot-kwiboo_Jonas_Karlman.git
+
+          Tested with a ODROID-M1 8GB v1.0 2022-06-13:
+            - SD-card boot
+            - eMMC boot
+            - SPI Flash boot
+            - PCIe/NVMe/AHCI
+            - SATA port
+            - USB host
+
+          The generated u-boot-rockchip.bin image contain idbloader.img and
+          u-boot.itb at the expected offset and should be written to sector 64
+          of a SD-card or eMMC module.
+
+          The generated u-boot-rockchip-spi.bin should be written to 0x0 of
+          SPI Flash, the spi image use following offsets:
+            - 0x8000: idbloader.img (TPL + SPL)
+            - 0x60000: u-boot.itb (FIT image for U-Boot)
+          =================================
+          EOF
 
       - name: Upload U-Boot image
         uses: actions/upload-artifact@v3
         with:
-          name: U-Boot Image
+          name: U-Boot Images
           path: |
             output/
-
-
