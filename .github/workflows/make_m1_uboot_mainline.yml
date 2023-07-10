@@ -46,7 +46,7 @@ jobs:
       - name: Prepare folders
         run: |
           mkdir -p cache/{toolchains,tmp}
-          mkdir -p output/{spl,tpl}
+          mkdir -p output/{spl,tpl,config}
 
       - name: Install Packages
         uses: awalsh128/cache-apt-pkgs-action@latest
@@ -98,6 +98,9 @@ jobs:
           cp --verbose -R spl/*.bin ../output/spl
           cp --verbose -R spl/*.dtb ../output/spl
           cp --verbose -R spl/*.sym ../output/spl
+          cp --verbose .config ../output/config
+          cp --verbose include/generated/*.* ../output/config
+          cat << EOF > ../output/ReadeMe.txt
           cat << EOF > ../output/ReadeMe.txt
           How to use the U-Boot image files
           ---------------------------------
