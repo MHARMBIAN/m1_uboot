@@ -101,28 +101,56 @@ jobs:
           cp --verbose .config ../output/config
           cp --verbose include/generated/*.* ../output/config
           cat << EOF > ../output/ReadeMe.txt
-          cat << EOF > ../output/ReadeMe.txt
           How to use the U-Boot image files
           ---------------------------------
-          As of git commit comment to SHA-1: ab900d518e47b4a81023a3f0b191be110c956ace
-          on https://github.com/MHARMBIAN/u-boot-kwiboo_Jonas_Karlman.git
+          As of git commit comments to SHA-1 on https://github.com/MHARMBIAN/u-boot-kwiboo_Jonas_Karlman.git:
+           ab900d518e47b4a81023a3f0b191be110c956ace: (outdated)
+           eb7507a148e13f3b49f5a1c24e1a6c62a19075a9: board: rockchip: Add Hardkernel ODROID-M1
+             Hardkernel ODROID-M1 is a single board computer with a RK3568B2 SoC,
+             a slightly modified version of the RK3568 SoC.
 
-          Tested with a ODROID-M1 8GB v1.0 2022-06-13:
-            - SD-card boot
-            - eMMC boot
-            - SPI Flash boot
-            - PCIe/NVMe/AHCI
-            - SATA port
-            - USB host
+             Features tested on a ODROID-M1 8GB v1.0 2022-06-13:
+               - SD-card boot
+               - eMMC boot
+               - SPI Flash boot
+               - PCIe/NVMe/AHCI
+               - SATA port
+               - USB host
 
-          The generated u-boot-rockchip.bin image contain idbloader.img and
-          u-boot.itb at the expected offset and should be written to sector 64
-          of a SD-card or eMMC module.
+             Device tree is imported from linux v6.4.
 
-          The generated u-boot-rockchip-spi.bin should be written to 0x0 of
-          SPI Flash, the spi image use following offsets:
-            - 0x8000: idbloader.img (TPL + SPL)
-            - 0x60000: u-boot.itb (FIT image for U-Boot)
+          ---------------------------------
+            c33ceec550a2ad42e6ddb4a688110ed619692662: doc: rockchip: Update SPI flashing instruction
+
+            Update documentation on how to write a bootable u-boot-rockchip-spi.bin
+            image into SPI flash. This removes the reference to a hardcoded and now
+            obsolete 0x60000 payload offset.
+
+            Also remove an obsolete reference to pad_cat.
+
+            See file doc/board/rockchip/rockchip.rst:
+              ...
+              Flashing
+              --------
+              1. Package the image with U-Boot TPL/SPL
+              -----------------------------------------
+
+              SD Card
+              -------
+              All Rockchip platforms (except rk3128 which doesn't use SPL) are now
+              supporting a single boot image using binman.
+              To write an image that boots from a SD card (assumed to be /dev/sdmmc0):
+                sudo dd if=u-boot-rockchip.bin of=/dev/sdmmc0 seek=64
+                sync
+
+              SPI
+              ---
+              Write u-boot-rockchip-spi.bin to offset 0 of SPI flash.
+              Copy u-boot-rockchip-spi.bin into SD card and boot from SD:
+                sf probe
+                load mmc 1:1 $kernel_addr_r u-boot-rockchip-spi.bin
+                sf update $fileaddr 0 $filesize
+              ...
           =================================
           EOF
 
